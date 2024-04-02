@@ -11,8 +11,8 @@ using trainingEF;
 namespace trainingEF.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240402100820_init")]
-    partial class init
+    [Migration("20240402142408_initial")]
+    partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

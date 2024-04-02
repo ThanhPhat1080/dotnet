@@ -1,83 +1,59 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
+﻿using Microsoft.AspNetCore.Mvc;
+using trainingEF.Repositories;
 namespace trainingEF.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
     public class UserController : Controller
     {
-        // GET: UserController
-        public ActionResult Index()
+        private readonly IUserRepository userRepository;
+
+        public UserController(IUserRepository _userRepository)
         {
-            return View();
+            userRepository = _userRepository;
         }
 
-        // GET: UserController/Details/5
-        public ActionResult Details(int id)
+        [HttpGet("")]
+        [ActionName("GetAllUsers")]
+        public IEnumerable<UserModel> Index()
         {
-            return View();
+            return userRepository.GetAllUsers();
         }
 
-        // GET: UserController/Create
-        public ActionResult Create()
+        [HttpGet("{id}")]
+        [ActionName("GetUserById")]
+        public UserModel? GetUserById(int id)
         {
-            return View();
+            return userRepository.GetUserById(id);
         }
 
-        // POST: UserController/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<ActionResult<UserModel>> Create(UserModel user)
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            await userRepository.CreateUser(user);
+
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
         }
 
-        // GET: UserController/Edit/5
-        public ActionResult Edit(int id)
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Edit(int id, UserModel user)
         {
-            return View();
+            if (id != user.Id)
+            {
+                return BadRequest();
+            }
+
+            bool isUpdated = await userRepository.UpdateUser(user);
+
+            return isUpdated ? Ok() : BadRequest();
         }
 
-        // POST: UserController/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(int id)
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+            bool isDeleted = await userRepository.DeleteUser(id);
 
-        // GET: UserController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: UserController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            return isDeleted ? Ok() : BadRequest();
         }
     }
 }

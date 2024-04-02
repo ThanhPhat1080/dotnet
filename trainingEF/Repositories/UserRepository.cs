@@ -1,5 +1,5 @@
-﻿using trainingEF.Models;
-
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 namespace trainingEF.Repositories
 {
     public class UserRepository : IUserRepository
@@ -14,6 +14,62 @@ namespace trainingEF.Repositories
         public IEnumerable<UserModel> GetAllUsers()
         {
             return context.UserDbSet.ToList();
+        }
+
+        public UserModel? GetUserById(int id)
+        {
+            return context.UserDbSet.Find(id);
+        }
+
+        public async Task<ActionResult<UserModel>> CreateUser(UserModel user)
+        {
+            context.UserDbSet.Add(user);
+            await context.SaveChangesAsync();
+
+            return user;
+        }
+
+        public async Task<bool> UpdateUser(UserModel user)
+        {
+            UserModel? foundUser = await context.UserDbSet.FindAsync(user.Id);
+            if (foundUser == null)
+            {
+                return false;
+            }
+
+            foundUser.Name = user.Name;
+
+            try
+            {
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public async Task<bool> DeleteUser(int id)
+        {
+            UserModel? foundUser = await context.UserDbSet.FindAsync(id);
+            if (foundUser == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                context.UserDbSet.Remove(foundUser);
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
