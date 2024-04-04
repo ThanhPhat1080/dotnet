@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using trainingEF;
+using trainingEF.Data;
 using trainingEF.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);

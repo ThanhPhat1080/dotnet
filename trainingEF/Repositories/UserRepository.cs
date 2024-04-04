@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using trainingEF.Data;
 namespace trainingEF.Repositories
 {
     public class UserRepository : IUserRepository
