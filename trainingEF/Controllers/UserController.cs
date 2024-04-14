@@ -1,59 +1,58 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using trainingEF.Repositories;
-namespace trainingEF.Controllers
+namespace trainingEF.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UserController : Controller
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class UserController : Controller
+    private readonly IUserRepository userRepository;
+
+    public UserController(IUserRepository _userRepository)
     {
-        private readonly IUserRepository userRepository;
+        userRepository = _userRepository;
+    }
 
-        public UserController(IUserRepository _userRepository)
+    [HttpGet("")]
+    [ActionName("GetAllUsers")]
+    public IEnumerable<UserModel> Index()
+    {
+        return userRepository.GetAllUsers();
+    }
+
+    [HttpGet("{id}")]
+    [ActionName("GetUserById")]
+    public UserModel? GetUserById(int id)
+    {
+        return userRepository.GetUserById(id);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<UserModel>> Create(UserModel user)
+    {
+        await userRepository.CreateUser(user);
+
+        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult> Edit(int id, UserModel user)
+    {
+        if (id != user.Id)
         {
-            userRepository = _userRepository;
+            return BadRequest();
         }
 
-        [HttpGet("")]
-        [ActionName("GetAllUsers")]
-        public IEnumerable<UserModel> Index()
-        {
-            return userRepository.GetAllUsers();
-        }
+        bool isUpdated = await userRepository.UpdateUser(user);
 
-        [HttpGet("{id}")]
-        [ActionName("GetUserById")]
-        public UserModel? GetUserById(int id)
-        {
-            return userRepository.GetUserById(id);
-        }
+        return isUpdated ? Ok() : BadRequest();
+    }
 
-        [HttpPost]
-        public async Task<ActionResult<UserModel>> Create(UserModel user)
-        {
-            await userRepository.CreateUser(user);
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        bool isDeleted = await userRepository.DeleteUser(id);
 
-            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<ActionResult> Edit(int id, UserModel user)
-        {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            bool isUpdated = await userRepository.UpdateUser(user);
-
-            return isUpdated ? Ok() : BadRequest();
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
-        {
-            bool isDeleted = await userRepository.DeleteUser(id);
-
-            return isDeleted ? Ok() : BadRequest();
-        }
+        return isDeleted ? Ok() : BadRequest();
     }
 }

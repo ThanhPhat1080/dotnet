@@ -1,15 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using trainingEF.Models;
 
 namespace trainingEF.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext
     {
-        private readonly IConfiguration configuration;
 
-        public AppDbContext(DbContextOptions options, IConfiguration _configuration) : base(options)
+        public AppDbContext(DbContextOptions options) : base(options)
         {
-            configuration = _configuration;
         }
 
         public DbSet<UserModel>? UserDbSet { get; set; }
@@ -21,7 +20,6 @@ namespace trainingEF.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlServer(configuration.GetConnectionString("Default"));
         }
     }
 

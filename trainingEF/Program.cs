@@ -1,4 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using trainingEF.Configuration;
 using trainingEF.Data;
 using trainingEF.Repositories;
 
@@ -13,8 +16,40 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("Default"));
 });
+
+
+// Config
+builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection(key: "JwtConfig"));
+
+// Updating middleware. There's going to be an Authentication. Any request with header with be validate
+builder.Services.AddAuthentication(configureOptions =>
+{
+    // Building the header, header will sending Authorization
+    configureOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    configureOptions.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    configureOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(jwt =>
+{
+    byte[] key = Encoding.ASCII.GetBytes(builder.Configuration.GetSection(key: "JwtConfig:Secret").ToString());
+
+    jwt.SaveToken = true;
+    jwt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key),
+
+
+        ValidateIssuer = false, // for development
+        ValidateAudience = false, // for development
+        RequireExpirationTime = false, // for development, need to be update when refresh token issue
+
+        ValidateLifetime = true,
+    };
+});
+
 
 // DI repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -28,7 +63,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
