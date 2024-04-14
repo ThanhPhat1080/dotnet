@@ -15,14 +15,17 @@ namespace trainingEF.Controllers;
 public class AuthenticationController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly JwtConfig _jwtConfig;
+    private readonly IConfiguration _configuration;
+    private readonly string secretTokenKey;
 
     public AuthenticationController(
         UserManager<IdentityUser> userManager,
-        JwtConfig jwtConfig)
+        IConfiguration configuration)
     {
+
         _userManager = userManager;
-        _jwtConfig = jwtConfig;
+        _configuration = configuration;
+        secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
     }
 
     [HttpPost]
@@ -86,7 +89,7 @@ public class AuthenticationController : ControllerBase
     {
         var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-        byte[] key = Encoding.UTF8.GetBytes(_jwtConfig.Secret);
+        byte[] key = Encoding.UTF8.GetBytes(secretTokenKey);
 
         // Token descriptor. (JWT payload)
         var tokenDescriptor = new SecurityTokenDescriptor()

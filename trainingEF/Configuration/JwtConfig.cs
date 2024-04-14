@@ -1,8 +1,11 @@
-﻿using System;
-namespace trainingEF.Configuration
+﻿namespace trainingEF.Configuration;
+
+public class JwtConfig
 {
-	public class JwtConfig
-	{
-        public string Secret { get; set; }
-	}
+    public JwtConfig(string _secret)
+    {
+        Secret = _secret;
+    }
+
+    public string Secret { get; set; }
 }

@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using trainingEF.Configuration;
 using trainingEF.Data;
@@ -20,7 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 
-// Config
+// Config -- not working
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection(key: "JwtConfig"));
 
 // Updating middleware. There's going to be an Authentication. Any request with header with be validate
@@ -53,6 +54,9 @@ builder.Services.AddAuthentication(configureOptions =>
 
 // DI repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedEmail = false)
+    .AddEntityFrameworkStores<AppDbContext>();
 
 var app = builder.Build();
 
