@@ -85,6 +85,68 @@ public class AuthenticationController : ControllerBase
         }
     }
 
+    [HttpPost]
+    [Route("Login")] // api/authentication/login
+    public async Task<IActionResult> Login([FromBody] UserLoginRequestDto requestDto)
+    {
+        try
+        {
+            // Validate the incoming request
+            if (ModelState.IsValid)
+            {
+                // Check if the email already exist
+                var user_exist = await _userManager.FindByEmailAsync(requestDto.Email);
+
+                if (user_exist == null)
+                {
+                    return BadRequest(new AuthResult()
+                    {
+                        Result = false,
+                        Errors = new List<string>()
+                        {
+                            "Email does not exist!"
+                        }
+                    });
+                }
+
+                bool isPasswordCorrect = await _userManager.CheckPasswordAsync(user_exist, requestDto.Password);
+
+                if (isPasswordCorrect)
+                {
+                    // Generate the token
+                    var token = GenerateJwtToken(user_exist);
+
+                    return Ok(new AuthResult()
+                    {
+                        Result = true,
+                        Token = token,
+                    });
+                }
+            }
+
+            return BadRequest(new AuthResult()
+            {
+                Errors = new List<string>()
+                {
+                    "Email or password is not correct!"
+                },
+                Result = false
+            });
+
+        }
+        catch (Exception)
+        {
+            return BadRequest(new AuthResult()
+            {
+                Errors = new List<string>()
+                {
+                    "Server error!"
+                },
+                Result = false
+            });
+        }
+    }
+
     private string GenerateJwtToken(IdentityUser user)
     {
         var jwtTokenHandler = new JwtSecurityTokenHandler();
