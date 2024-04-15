@@ -5,12 +5,21 @@ using Microsoft.EntityFrameworkCore;
 using trainingEF.Configuration;
 using trainingEF.Data;
 using trainingEF.Repositories;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using trainingEF.Models.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+#pragma warning disable CS0618 // Type or member is obsolete
+builder.Services.AddControllers()
+    .AddFluentValidation(df =>
+    {
+        df.RegisterValidatorsFromAssemblyContaining<UserRegistrationRequestValidator>();
+    }
+);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
