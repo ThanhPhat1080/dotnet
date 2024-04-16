@@ -18,10 +18,8 @@ public static class IdentityExtension
         })
         .AddJwtBearer(jwt =>
         {
-#pragma warning disable CS8604 // Possible null reference argument.
-            string keySecret = configuration.GetSection(key: "JwtConfig:Secret").ToString();
-            byte[] key = Encoding.ASCII.GetBytes(keySecret);
-            #pragma warning restore CS8604 // Possible null reference argument.
+            string keySecret = configuration.GetSection("JwtConfig:Secret").Value.ToString();
+            byte[] key = Encoding.UTF8.GetBytes(keySecret);
 
             jwt.SaveToken = true;
             jwt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
