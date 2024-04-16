@@ -33,6 +33,27 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerDocumentation();
 }
 
+
+
+# region Seed / Update DB
+using IServiceScope scope = app.Services.CreateScope();
+IServiceProvider serviceProvider = scope.ServiceProvider;
+
+// Migrate the database
+try
+{
+    AppDbContext appDb = serviceProvider.GetRequiredService<AppDbContext>();
+    await appDb.Database.MigrateAsync();
+
+    // Add the roles
+    RoleManager<IdentityRole> roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await AppDbSeeding.SeedingData(roleManager: roleManager);
+} catch(Exception e)
+{
+    Console.Write("{@Exception}", e);
+}
+#endregion
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

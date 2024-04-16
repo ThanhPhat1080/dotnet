@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using trainingEF.Configuration;
+using trainingEF.Entities;
 using trainingEF.Models;
 using trainingEF.Models.DTOs;
 
@@ -62,6 +63,19 @@ public class AuthenticationController : ControllerBase
             {
                 // Generate the token
                 var token = GenerateJwtToken(new_user);
+                var assignRoleResult = await _userManager.AddToRoleAsync(new_user, Roles.User.ToString());
+
+                if (!assignRoleResult.Succeeded)
+                {
+                    return BadRequest(new AuthResult()
+                    {
+                        Errors = new List<string>()
+                        {
+                            "Cannot assign user role!"
+                        },
+                        Result = false
+                    });
+                }
 
                 return Ok(new AuthResult()
                 {

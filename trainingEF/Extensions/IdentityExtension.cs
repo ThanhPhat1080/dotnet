@@ -9,7 +9,7 @@ public static class IdentityExtension
 {
     public static IServiceCollection AddAuthentication(this IServiceCollection service, IConfiguration configuration)
     {
-        _ = service.AddAuthentication(configureOptions =>
+        service.AddAuthentication(configureOptions =>
         {
             // Building the header, header will sending Authorization
             configureOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -34,9 +34,18 @@ public static class IdentityExtension
                 ValidateLifetime = true,
             };
         });
+        service.AddIdentity<IdentityUser, IdentityRole>(options =>
+         {
+             // Add Password options
+             options.Password.RequireDigit = true;
+             //options.Password.RequireLowercase = true;
+             //options.Password.RequireNonAlphanumeric = true;
+         })
+        .AddRoles<IdentityRole>()
+        .AddEntityFrameworkStores<AppDbContext>();
 
-        service.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedEmail = false)
-            .AddEntityFrameworkStores<AppDbContext>();
+        //service.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedEmail = false)
+        //    .AddEntityFrameworkStores<AppDbContext>();
 
         return service;
     }

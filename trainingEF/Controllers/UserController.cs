@@ -15,8 +15,9 @@ public class UserController : Controller
         userRepository = _userRepository;
     }
 
-    [HttpGet("")]
+    [HttpGet()]
     [ActionName("GetAllUsers")]
+    [Authorize(Roles = "User")]
     public IEnumerable<UserModel> Index()
     {
         return userRepository.GetAllUsers();
@@ -24,6 +25,7 @@ public class UserController : Controller
 
     [HttpGet("{id}")]
     [ActionName("GetUserById")]
+    [Authorize(Roles = "Admin")]
     public UserModel? GetUserById(int id)
     {
         return userRepository.GetUserById(id);
