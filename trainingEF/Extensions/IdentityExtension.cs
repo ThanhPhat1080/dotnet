@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using trainingEF.Data;
 
@@ -18,34 +19,26 @@ public static class IdentityExtension
         })
         .AddJwtBearer(jwt =>
         {
-            string keySecret = configuration.GetSection("JwtConfig:Secret").Value.ToString();
-            byte[] key = Encoding.UTF8.GetBytes(keySecret);
-
             jwt.SaveToken = true;
             jwt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Secret"])),
 
                 ValidateIssuer = false, // for development
                 ValidateAudience = false, // for development
                 RequireExpirationTime = false, // for development, need to be update when refresh token issue
 
-                ValidateLifetime = true,
+                ValidateLifetime = true
             };
         });
-        service.AddIdentity<IdentityUser, IdentityRole>(options =>
-         {
-             // Add Password options
-             options.Password.RequireDigit = true;
-             //options.Password.RequireLowercase = true;
-             //options.Password.RequireNonAlphanumeric = true;
-         })
-        .AddRoles<IdentityRole>()
-        .AddEntityFrameworkStores<AppDbContext>();
 
-        //service.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedEmail = false)
-        //    .AddEntityFrameworkStores<AppDbContext>();
+        service
+            .AddIdentityCore<IdentityUser>()
+            .AddUserManager<UserManager<IdentityUser>>()
+            .AddRoles<IdentityRole>()
+            .AddRoleManager<RoleManager<IdentityRole>>()
+            .AddEntityFrameworkStores<AppDbContext>();
 
         return service;
     }

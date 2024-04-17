@@ -4,9 +4,9 @@ using trainingEF.Repositories;
 namespace trainingEF.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class UserController : Controller
+[Route("api/[controller]")]
+public class UserController : ControllerBase
 {
     private readonly IUserRepository userRepository;
 
@@ -15,17 +15,17 @@ public class UserController : Controller
         userRepository = _userRepository;
     }
 
-    [HttpGet()]
-    [ActionName("GetAllUsers")]
-    [Authorize(Roles = "User")]
-    public IEnumerable<UserModel> Index()
+    [HttpGet("All-users")]
+    //[Authorize(Roles = "User")]
+    //[AllowAnonymous]
+    public IActionResult Index()
     {
-        return userRepository.GetAllUsers();
+        return Ok(userRepository.GetAllUsers().ToList());    
     }
 
     [HttpGet("{id}")]
     [ActionName("GetUserById")]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     public UserModel? GetUserById(int id)
     {
         return userRepository.GetUserById(id);

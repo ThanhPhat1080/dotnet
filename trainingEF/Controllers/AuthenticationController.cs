@@ -175,6 +175,7 @@ public class AuthenticationController : ControllerBase
                 new Claim(type: "Id", value: user.Id),
                 new Claim(type: JwtRegisteredClaimNames.Sub, value: user.Email),
                 new Claim(type: JwtRegisteredClaimNames.Email, value: user.Email),
+                //new Claim(type: ClaimTypes.Role, value: "User"),
                 new Claim(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
                 new Claim(type: JwtRegisteredClaimNames.Iat, value: DateTime.Now.ToUniversalTime().ToString())
             }),
