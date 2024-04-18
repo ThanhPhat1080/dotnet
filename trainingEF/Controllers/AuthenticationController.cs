@@ -9,6 +9,7 @@ using trainingEF.Configuration;
 using trainingEF.Entities;
 using trainingEF.Models;
 using trainingEF.Models.DTOs;
+using trainingEF.Repositories;
 
 namespace trainingEF.Controllers;
 
@@ -17,94 +18,54 @@ namespace trainingEF.Controllers;
 public class AuthenticationController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly IConfiguration _configuration;
     private readonly string secretTokenKey;
+    private readonly IIdentityRepository _identityRepository;
 
     public AuthenticationController(
         UserManager<IdentityUser> userManager,
-        RoleManager<IdentityRole> roleManager,
+        IIdentityRepository identityRepository,
         IConfiguration configuration)
     {
 
         _userManager = userManager;
-        _roleManager = roleManager;
-        _configuration = configuration;
         secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
+
+        _identityRepository = identityRepository;
     }
 
     [HttpPost]
     [Route("Register")] // api/authentication/register
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] UserRegistrationRequestDto requestDto)
     {
         // Validate the incoming request
         if (ModelState.IsValid)
         {
-            // Check if the email already exist
-            var user_exist = await _userManager.FindByEmailAsync(requestDto.Email);
+            AuthResult result = await _identityRepository.Register(requestDto);
 
-            if (user_exist != null)
+            if (result.Result)
             {
-                return BadRequest(new AuthResult()
-                {
-                    Result = false,
-                    Errors = new List<string>()
-                    {
-                        "Email already exist!"
-                    }
-                });
+                return Ok(result);
             }
 
-            var new_user = new IdentityUser()
-            {
-                Email = requestDto.Email,
-                UserName = requestDto.Name
-            };
-
-            var is_created = await _userManager.CreateAsync(new_user, requestDto.Password);
-
-            if (is_created.Succeeded)
-            {
-                // Generate the token
-                var token = GenerateJwtToken(new_user);
-                var assignRoleResult = await _userManager.AddToRoleAsync(new_user, Roles.User.ToString());
-
-                if (!assignRoleResult.Succeeded)
-                {
-                    return BadRequest(new AuthResult()
-                    {
-                        Errors = new List<string>()
-                        {
-                            "Cannot assign user role!"
-                        },
-                        Result = false
-                    });
-                }
-
-                return Ok(new AuthResult()
-                {
-                    Result = true,
-                    Token = token,
-                });
-            }
-
-            return BadRequest(new AuthResult()
-            {
-                Errors = new List<string>()
-                {
-                    "Server error!"
-                },
-                Result = false
-            });
+            return BadRequest(result);
         }
         else
         {
-            return BadRequest();
+            return BadRequest(new AuthResult()
+            {
+                Result = false,
+                Errors = new List<string>()
+                {
+                    "Invalid input!"
+                }
+            });
         }
     }
 
     [HttpPost]
     [Route("Login")] // api/authentication/login
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] UserLoginRequestDto requestDto)
     {
         try
@@ -193,6 +154,7 @@ public class AuthenticationController : ControllerBase
 
                 if (!userRoles.Contains(Roles.Admin.ToString())) 
                 {
+                    await _userManager.RemoveFromRoleAsync(user_exist, Roles.User.ToString());
                     await _userManager.AddToRoleAsync(user_exist, Roles.Admin.ToString());
                     await _userManager.UpdateAsync(user_exist);
 

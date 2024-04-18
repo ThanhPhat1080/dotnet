@@ -20,7 +20,7 @@ public static class IdentityExtension
         .AddJwtBearer(jwt =>
         {
             jwt.SaveToken = true;
-            jwt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+            jwt.TokenValidationParameters = new TokenValidationParameters()
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Secret"])),

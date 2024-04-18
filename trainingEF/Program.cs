@@ -47,7 +47,8 @@ try
 
     // Add the roles
     RoleManager<IdentityRole> roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await AppDbSeeding.SeedingData(roleManager: roleManager);
+    UserManager<IdentityUser> userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    await AppDbSeeding.SeedingData(roleManager: roleManager, userManager: userManager);
 } catch(Exception e)
 {
     Console.Write("{@Exception}", e);
