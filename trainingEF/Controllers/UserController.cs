@@ -16,8 +16,6 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("All-users")]
-    //[Authorize(Roles = "User")]
-    //[AllowAnonymous]
     public IActionResult Index()
     {
         return Ok(userRepository.GetAllUsers().ToList());    

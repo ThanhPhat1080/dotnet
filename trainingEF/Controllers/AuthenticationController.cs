@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -16,15 +17,18 @@ namespace trainingEF.Controllers;
 public class AuthenticationController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
     private readonly string secretTokenKey;
 
     public AuthenticationController(
         UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
         IConfiguration configuration)
     {
 
         _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
         secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
     }
@@ -161,24 +165,93 @@ public class AuthenticationController : ControllerBase
         }
     }
 
+    [HttpPost]
+    [Route("Change-role-admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ChangeUserRoleToAdmin([FromBody] string userId)
+    {
+        try
+        {
+            // Validate the incoming request
+            if (ModelState.IsValid)
+            {
+                // Check if the email already exist
+                var user_exist = await _userManager.FindByIdAsync(userId);
+
+                if (user_exist == null)
+                {
+                    return BadRequest(new AuthResult()
+                    {
+                        Result = false,
+                        Errors = new List<string>()
+                        {
+                            "User does not exist!"
+                        }
+                    });
+                }
+                var userRoles = _userManager.GetRolesAsync(user_exist).Result;
+
+                if (!userRoles.Contains(Roles.Admin.ToString())) 
+                {
+                    await _userManager.AddToRoleAsync(user_exist, Roles.Admin.ToString());
+                    await _userManager.UpdateAsync(user_exist);
+
+                    return Ok(user_exist);
+                }
+            }
+
+            return BadRequest(new AuthResult()
+            {
+                Errors = new List<string>()
+                {
+                    "Cannot update user role!"
+                },
+                Result = false
+            });
+
+        }
+        catch (Exception)
+        {
+            return BadRequest(new AuthResult()
+            {
+                Errors = new List<string>()
+                {
+                    "Cannot update user role!"
+                },
+                Result = false
+            });
+        }
+    }
+
+    private async Task<List<Claim>> CreateClaimAsync(IdentityUser user)
+    {
+        List<Claim> claims = new()
+        {
+            new(type: "Id", value: user.Id),
+            new(type: JwtRegisteredClaimNames.Sub, value: user.Email),
+            new(type: JwtRegisteredClaimNames.Email, value: user.Email),
+            new(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
+            new(type: JwtRegisteredClaimNames.Iat, value: DateTime.Now.ToUniversalTime().ToString())
+        };
+
+        var userRoles = await _userManager.GetRolesAsync(user);
+
+        claims.AddRange(userRoles.Select(x => new Claim(type: ClaimTypes.Role, value: x)));
+
+        return claims;
+    }
+
     private string GenerateJwtToken(IdentityUser user)
     {
         var jwtTokenHandler = new JwtSecurityTokenHandler();
-
         byte[] key = Encoding.UTF8.GetBytes(secretTokenKey);
+
+        var claims = CreateClaimAsync(user).Result;
 
         // Token descriptor. (JWT payload)
         var tokenDescriptor = new SecurityTokenDescriptor()
         {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(type: "Id", value: user.Id),
-                new Claim(type: JwtRegisteredClaimNames.Sub, value: user.Email),
-                new Claim(type: JwtRegisteredClaimNames.Email, value: user.Email),
-                //new Claim(type: ClaimTypes.Role, value: "User"),
-                new Claim(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
-                new Claim(type: JwtRegisteredClaimNames.Iat, value: DateTime.Now.ToUniversalTime().ToString())
-            }),
+            Subject = new ClaimsIdentity(claims),
             
             Expires = DateTime.Now.AddHours(1),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256),
