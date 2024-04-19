@@ -81,6 +81,112 @@ namespace trainingEF.Repositories
             };
         }
 
+        public async Task<AuthResult> Login(UserLoginRequestDto userDto)
+        {
+            try
+            {
+                var userExist = await _userManager.FindByEmailAsync(userDto.Email);
+
+                if (userExist == null)
+                {
+                    return new AuthResult()
+                    {
+                        Result = false,
+                        Errors = new List<string>()
+                        {
+                            "Email does not exist!"
+                        }
+                    };
+                }
+
+                bool isPasswordCorrect = await _userManager.CheckPasswordAsync(userExist, userDto.Password);
+                if (isPasswordCorrect)
+                {
+                    // Generate the token
+                    var token = GenerateJwtToken(userExist);
+
+                    return new AuthResult()
+                    {
+                        Result = true,
+                        Token = token,
+                    };
+                }
+
+                return new AuthResult()
+                {
+                    Result = false,
+                    Errors = new List<string>()
+                    {
+                        "Email or password is not correct!"
+                    }
+                };
+            }
+            catch (Exception)
+            {
+                return new AuthResult()
+                {
+                    Result = false,
+                    Errors = new List<string>()
+                    {
+                        "Server error!"
+                    }
+                };
+            }
+        }
+
+        public async Task<AuthResult> AddRoleAdmin(string userId)
+        {
+            try
+            {
+                // Check if the email already exist
+                var userExist = await _userManager.FindByIdAsync(userId);
+
+                if (userExist == null)
+                {
+                    return new AuthResult()
+                    {
+                        Errors = new List<string>()
+                        {
+                            "User does not exist!"
+                        }
+                    };
+                }
+                var userRoles = _userManager.GetRolesAsync(userExist).Result;
+
+                if (!userRoles.Contains(Roles.Admin.ToString()))
+                {
+                    //await _userManager.RemoveFromRoleAsync(user_exist, Roles.User.ToString());
+                    await _userManager.AddToRoleAsync(userExist, Roles.Admin.ToString());
+                    await _userManager.UpdateAsync(userExist);
+
+                    return new AuthResult()
+                    {
+                        Result = true
+                    };
+                }
+
+                return new AuthResult()
+                {
+                    Result = false,
+                    Errors = new List<string>()
+                    {
+                        "Cannot update user role!"
+                    }
+                };
+
+            }
+            catch (Exception)
+            {
+                return new AuthResult()
+                {
+                    Result = false,
+                    Errors = new List<string>()
+                    {
+                        "Cannot update user role!"
+                    },
+                };
+            }
+        }
         private async Task<List<Claim>> CreateClaimAsync(IdentityUser user)
         {
             List<Claim> claims = new()

@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -17,8 +18,6 @@ namespace trainingEF.Controllers;
 [ApiController]
 public class AuthenticationController : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly string secretTokenKey;
     private readonly IIdentityRepository _identityRepository;
 
     public AuthenticationController(
@@ -26,10 +25,6 @@ public class AuthenticationController : ControllerBase
         IIdentityRepository identityRepository,
         IConfiguration configuration)
     {
-
-        _userManager = userManager;
-        secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
-
         _identityRepository = identityRepository;
     }
 
@@ -66,7 +61,7 @@ public class AuthenticationController : ControllerBase
     [HttpPost]
     [Route("Login")] // api/authentication/login
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] UserLoginRequestDto requestDto)
+    public async Task<IActionResult> Login([FromBody] UserLoginRequestDto userDto)
     {
         try
         {
@@ -74,32 +69,11 @@ public class AuthenticationController : ControllerBase
             if (ModelState.IsValid)
             {
                 // Check if the email already exist
-                var user_exist = await _userManager.FindByEmailAsync(requestDto.Email);
+                AuthResult result = await _identityRepository.Login(userDto);
 
-                if (user_exist == null)
+                if (result.Result)
                 {
-                    return BadRequest(new AuthResult()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Email does not exist!"
-                        }
-                    });
-                }
-
-                bool isPasswordCorrect = await _userManager.CheckPasswordAsync(user_exist, requestDto.Password);
-
-                if (isPasswordCorrect)
-                {
-                    // Generate the token
-                    var token = GenerateJwtToken(user_exist);
-
-                    return Ok(new AuthResult()
-                    {
-                        Result = true,
-                        Token = token,
-                    });
+                    return Ok(result);
                 }
             }
 
@@ -108,8 +82,7 @@ public class AuthenticationController : ControllerBase
                 Errors = new List<string>()
                 {
                     "Email or password is not correct!"
-                },
-                Result = false
+                }
             });
 
         }
@@ -127,101 +100,27 @@ public class AuthenticationController : ControllerBase
     }
 
     [HttpPost]
-    [Route("Change-role-admin")]
+    [Route("add-role-admin")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> ChangeUserRoleToAdmin([FromBody] string userId)
+    public async Task<IActionResult> AddRoleAdmin([FromBody] string userId)
     {
-        try
+        // Validate the incoming request
+        if (ModelState.IsValid)
         {
-            // Validate the incoming request
-            if (ModelState.IsValid)
+            var result = await _identityRepository.AddRoleAdmin(userId);
+
+            if (result.Result)
             {
-                // Check if the email already exist
-                var user_exist = await _userManager.FindByIdAsync(userId);
-
-                if (user_exist == null)
-                {
-                    return BadRequest(new AuthResult()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "User does not exist!"
-                        }
-                    });
-                }
-                var userRoles = _userManager.GetRolesAsync(user_exist).Result;
-
-                if (!userRoles.Contains(Roles.Admin.ToString())) 
-                {
-                    await _userManager.RemoveFromRoleAsync(user_exist, Roles.User.ToString());
-                    await _userManager.AddToRoleAsync(user_exist, Roles.Admin.ToString());
-                    await _userManager.UpdateAsync(user_exist);
-
-                    return Ok(user_exist);
-                }
+                return Ok(result);
             }
-
-            return BadRequest(new AuthResult()
-            {
-                Errors = new List<string>()
-                {
-                    "Cannot update user role!"
-                },
-                Result = false
-            });
-
         }
-        catch (Exception)
+
+        return BadRequest(new AuthResult()
         {
-            return BadRequest(new AuthResult()
+            Errors = new List<string>()
             {
-                Errors = new List<string>()
-                {
-                    "Cannot update user role!"
-                },
-                Result = false
-            });
-        }
-    }
-
-    private async Task<List<Claim>> CreateClaimAsync(IdentityUser user)
-    {
-        List<Claim> claims = new()
-        {
-            new(type: "Id", value: user.Id),
-            new(type: JwtRegisteredClaimNames.Sub, value: user.Email),
-            new(type: JwtRegisteredClaimNames.Email, value: user.Email),
-            new(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
-            new(type: JwtRegisteredClaimNames.Iat, value: DateTime.Now.ToUniversalTime().ToString())
-        };
-
-        var userRoles = await _userManager.GetRolesAsync(user);
-
-        claims.AddRange(userRoles.Select(x => new Claim(type: ClaimTypes.Role, value: x)));
-
-        return claims;
-    }
-
-    private string GenerateJwtToken(IdentityUser user)
-    {
-        var jwtTokenHandler = new JwtSecurityTokenHandler();
-        byte[] key = Encoding.UTF8.GetBytes(secretTokenKey);
-
-        var claims = CreateClaimAsync(user).Result;
-
-        // Token descriptor. (JWT payload)
-        var tokenDescriptor = new SecurityTokenDescriptor()
-        {
-            Subject = new ClaimsIdentity(claims),
-            
-            Expires = DateTime.Now.AddHours(1),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256),
-        };
-
-        var token = jwtTokenHandler.CreateToken(tokenDescriptor);
-        var jwtToken = jwtTokenHandler.WriteToken(token);
-
-        return jwtToken;
+                "Cannot update user role!"
+            },
+        });
     }
 }

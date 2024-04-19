@@ -6,35 +6,51 @@ namespace trainingEF.Data;
 
 public class AppDbSeeding
 {
-    public static async Task SeedingData(RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
+    public static async Task SeedingData(
+        RoleManager<IdentityRole> roleManager,
+        UserManager<IdentityUser> userManager,
+        AppDbContext appDb)
     {
-        #region Seeding Role Data
-        if (!await roleManager.RoleExistsAsync(Roles.Admin.ToString()))
-        {
-            await roleManager.CreateAsync(new IdentityRole(Roles.Admin.ToString()));
-        }
-        if (!await roleManager.RoleExistsAsync(Roles.User.ToString()))
-        {
-            await roleManager.CreateAsync(new IdentityRole(Roles.User.ToString()));
-        }
-        #endregion
 
-        #region Seeding Admin user
-        var userExist = await userManager.FindByEmailAsync("admin@admin.com");
+        await using var transaction = await appDb.Database.BeginTransactionAsync();
 
-        if (userExist == null)
+        try
         {
-            var newUser = new IdentityUser()
+            #region Seeding Role Data
+            if (!await roleManager.RoleExistsAsync(Roles.Admin.ToString()))
             {
-                Email = "admin@admin.com",
-                UserName = "AdminDefault"
-            };
+                await roleManager.CreateAsync(new IdentityRole(Roles.Admin.ToString()));
+            }
+            if (!await roleManager.RoleExistsAsync(Roles.User.ToString()))
+            {
+                await roleManager.CreateAsync(new IdentityRole(Roles.User.ToString()));
+            }
+            #endregion
 
-            // TODO: add pass to appSetting key
-            await userManager.CreateAsync(newUser, "Admin@123");
-            await userManager.AddToRoleAsync(newUser, Roles.Admin.ToString());
+            #region Seeding Admin user
+            var userExist = await userManager.FindByEmailAsync("admin@admin.com");
+
+            if (userExist == null)
+            {
+                var newUser = new IdentityUser()
+                {
+                    Email = "admin@admin.com",
+                    UserName = "AdminDefault"
+                };
+
+                // TODO: add pass to appSetting key
+                await userManager.CreateAsync(newUser, "Admin@123");
+                await userManager.AddToRoleAsync(newUser, Roles.Admin.ToString());
+
+                await transaction.CommitAsync();
+            }
+            #endregion
+
+        } catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            throw new Exception("Cannot add default data");
         }
-        #endregion
 
     }
 }

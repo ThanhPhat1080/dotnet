@@ -5,6 +5,8 @@ namespace trainingEF.Repositories
 {
     public interface IIdentityRepository
     {
-        public Task<AuthResult> Register(UserRegistrationRequestDto user);
+        Task<AuthResult> Register(UserRegistrationRequestDto user);
+        Task<AuthResult> Login(UserLoginRequestDto user);
+        Task<AuthResult> AddRoleAdmin(string userId);
     }
 }

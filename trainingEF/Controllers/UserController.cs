@@ -18,7 +18,7 @@ public class UserController : ControllerBase
     [HttpGet("All-users")]
     public IActionResult Index()
     {
-        return Ok(userRepository.GetAllUsers().ToList());    
+        return Ok(userRepository.GetAllUsers().ToList());
     }
 
     [HttpGet("{id}")]
