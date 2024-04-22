@@ -7,68 +7,109 @@ using trainingEF.Entities;
 using trainingEF.Models;
 using trainingEF.Models.DTOs;
 
-namespace trainingEF.Repositories
-{
-    public class IdentityRepository : IIdentityRepository
-    {
-        private readonly UserManager<UserDto> _userManager;
-        private readonly string secretTokenKey;
+namespace trainingEF.Repositories;
 
-        public IdentityRepository(
-            UserManager<UserDto> userManager,
-            IConfiguration configuration) {
-            _userManager = userManager;
-            secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
+public class IdentityRepository : IIdentityRepository
+{
+    private readonly UserManager<UserDto> _userManager;
+    private readonly string secretTokenKey;
+
+    public IdentityRepository(
+        UserManager<UserDto> userManager,
+        IConfiguration configuration) {
+        _userManager = userManager;
+        secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
+    }
+
+    #region Authention
+    public async Task<AuthResult> Register(UserRegistrationRequestDto userDto)
+    {
+        // Check if the email already exist
+        var userExist = await _userManager.FindByEmailAsync(userDto.Email);
+
+        if (userExist != null)
+        {
+            return new AuthResult()
+            {
+                Result = false,
+                Errors = new List<string>()
+                {
+                    "Email already exist!"
+                }
+            };
         }
 
-        #region Authention
-        public async Task<AuthResult> Register(UserRegistrationRequestDto userDto)
+        var newUser = new UserDto()
         {
-            // Check if the email already exist
-            var userExist = await _userManager.FindByEmailAsync(userDto.Email);
+            Email = userDto.Email,
+            UserName = userDto.Name
+        };
 
-            if (userExist != null)
+        var is_created = await _userManager.CreateAsync(newUser, userDto.Password);
+
+        if (is_created.Succeeded)
+        {
+
+            // Assign role "User" as default
+            var assignRoleResult = await _userManager.AddToRoleAsync(newUser, Roles.User.ToString());
+
+            if (!assignRoleResult.Succeeded)
             {
                 return new AuthResult()
                 {
                     Result = false,
                     Errors = new List<string>()
                     {
-                        "Email already exist!"
+                        "Cannot assign user role!"
                     }
                 };
             }
 
-            var newUser = new UserDto()
+            return new AuthResult()
             {
-                Email = userDto.Email,
-                UserName = userDto.Name
+                Result = true,
+                Token = GenerateJwtToken(newUser),
             };
+        }
 
-            var is_created = await _userManager.CreateAsync(newUser, userDto.Password);
-
-            if (is_created.Succeeded)
+        return new AuthResult()
+        {
+            Result = false,
+            Errors = new List<string>()
             {
+                "Cannot create user!"
+            }
+        };
+    }
 
-                // Assign role "User" as default
-                var assignRoleResult = await _userManager.AddToRoleAsync(newUser, Roles.User.ToString());
+    public async Task<AuthResult> Login(UserLoginRequestDto userDto)
+    {
+        try
+        {
+            var userExist = await _userManager.FindByEmailAsync(userDto.Email);
 
-                if (!assignRoleResult.Succeeded)
+            if (userExist == null)
+            {
+                return new AuthResult()
                 {
-                    return new AuthResult()
+                    Result = false,
+                    Errors = new List<string>()
                     {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Cannot assign user role!"
-                        }
-                    };
-                }
+                        "Email does not exist!"
+                    }
+                };
+            }
+
+            bool isPasswordCorrect = await _userManager.CheckPasswordAsync(userExist, userDto.Password);
+            if (isPasswordCorrect)
+            {
+                // Generate the token
+                var token = GenerateJwtToken(userExist);
 
                 return new AuthResult()
                 {
                     Result = true,
-                    Token = GenerateJwtToken(newUser),
+                    Token = token,
                 };
             }
 
@@ -77,202 +118,160 @@ namespace trainingEF.Repositories
                 Result = false,
                 Errors = new List<string>()
                 {
-                    "Cannot create user!"
+                    "Email or password is not correct!"
                 }
             };
         }
-
-        public async Task<AuthResult> Login(UserLoginRequestDto userDto)
+        catch (Exception)
         {
-            try
+            return new AuthResult()
             {
-                var userExist = await _userManager.FindByEmailAsync(userDto.Email);
-
-                if (userExist == null)
+                Result = false,
+                Errors = new List<string>()
                 {
-                    return new AuthResult()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Email does not exist!"
-                        }
-                    };
+                    "Server error!"
                 }
+            };
+        }
+    }
 
-                bool isPasswordCorrect = await _userManager.CheckPasswordAsync(userExist, userDto.Password);
-                if (isPasswordCorrect)
-                {
-                    // Generate the token
-                    var token = GenerateJwtToken(userExist);
+    public async Task<AuthResult> AddRoleAdmin(string userId)
+    {
+        try
+        {
+            // Check if the email already exist
+            var userExist = await _userManager.FindByIdAsync(userId);
 
-                    return new AuthResult()
-                    {
-                        Result = true,
-                        Token = token,
-                    };
-                }
-
+            if (userExist == null)
+            {
                 return new AuthResult()
                 {
-                    Result = false,
                     Errors = new List<string>()
                     {
-                        "Email or password is not correct!"
+                        "User does not exist!"
                     }
                 };
             }
-            catch (Exception)
+            var userRoles = _userManager.GetRolesAsync(userExist).Result;
+
+            if (!userRoles.Contains(Roles.Admin.ToString()))
             {
+                //await _userManager.RemoveFromRoleAsync(user_exist, Roles.User.ToString());
+                await _userManager.AddToRoleAsync(userExist, Roles.Admin.ToString());
+                await _userManager.UpdateAsync(userExist);
+
                 return new AuthResult()
                 {
-                    Result = false,
-                    Errors = new List<string>()
-                    {
-                        "Server error!"
-                    }
+                    Result = true
                 };
             }
-        }
 
-        public async Task<AuthResult> AddRoleAdmin(string userId)
-        {
-            try
+            return new AuthResult()
             {
-                // Check if the email already exist
-                var userExist = await _userManager.FindByIdAsync(userId);
-
-                if (userExist == null)
+                Result = false,
+                Errors = new List<string>()
                 {
-                    return new AuthResult()
-                    {
-                        Errors = new List<string>()
-                        {
-                            "User does not exist!"
-                        }
-                    };
+                    "Cannot update user role!"
                 }
-                var userRoles = _userManager.GetRolesAsync(userExist).Result;
+            };
 
-                if (!userRoles.Contains(Roles.Admin.ToString()))
-                {
-                    //await _userManager.RemoveFromRoleAsync(user_exist, Roles.User.ToString());
-                    await _userManager.AddToRoleAsync(userExist, Roles.Admin.ToString());
-                    await _userManager.UpdateAsync(userExist);
-
-                    return new AuthResult()
-                    {
-                        Result = true
-                    };
-                }
-
-                return new AuthResult()
-                {
-                    Result = false,
-                    Errors = new List<string>()
-                    {
-                        "Cannot update user role!"
-                    }
-                };
-
-            }
-            catch (Exception)
+        }
+        catch (Exception)
+        {
+            return new AuthResult()
             {
-                return new AuthResult()
+                Result = false,
+                Errors = new List<string>()
                 {
-                    Result = false,
-                    Errors = new List<string>()
-                    {
-                        "Cannot update user role!"
-                    },
-                };
-            }
+                    "Cannot update user role!"
+                },
+            };
         }
-        #endregion
+    }
+    #endregion
 
-        #region User actions
-        public IEnumerable<UserDto> GetAllUsers()
+    #region User actions
+    public IEnumerable<UserDto> GetAllUsers()
+    {
+        IEnumerable<UserDto> users = _userManager.Users.ToList();
+
+        return users;
+    }
+
+    public async Task<UserDto?> GetUserByEmail(string email)
+    {
+        UserDto user = await _userManager.FindByEmailAsync(email);
+
+        return user;
+    }
+
+    public async Task<UserDto?> UpdateUser(UserDto updatedUser)
+    {
+        UserDto foundUser = await _userManager.FindByIdAsync(updatedUser.Id);
+        if (foundUser != null)
         {
-            IEnumerable<UserDto> users = _userManager.Users.ToList();
 
-            return users;
-        }
+            foundUser.Address = updatedUser.Address;
+            IdentityResult result = await _userManager.UpdateAsync(foundUser);
 
-        public async Task<UserDto?> GetUserByEmail(string email)
-        {
-            UserDto user = await _userManager.FindByEmailAsync(email);
-
-            return user;
-        }
-
-        public async Task<UserDto?> UpdateUser(UserDto updatedUser)
-        {
-            UserDto foundUser = await _userManager.FindByIdAsync(updatedUser.Id);
-            if (foundUser != null)
-            {
-
-                foundUser.Address = updatedUser.Address;
-                IdentityResult result = await _userManager.UpdateAsync(foundUser);
-
-                return result.Succeeded ? updatedUser : null;
-            }
-
-            return null;
+            return result.Succeeded ? updatedUser : null;
         }
 
-        public async Task<bool> DeleteUser(string id)
+        return null;
+    }
+
+    public async Task<bool> DeleteUser(string id)
+    {
+        UserDto? foundUser = await _userManager.FindByIdAsync(id);
+        if (foundUser == null)
         {
-            UserDto? foundUser = await _userManager.FindByIdAsync(id);
-            if (foundUser == null)
-            {
-                return false;
-            }
-
-            IdentityResult result = await _userManager.DeleteAsync(foundUser);
-
-            return result.Succeeded;
+            return false;
         }
-        #endregion
 
-        #region JWT token configuration
-        private async Task<List<Claim>> CreateClaimAsync(UserDto user)
+        IdentityResult result = await _userManager.DeleteAsync(foundUser);
+
+        return result.Succeeded;
+    }
+    #endregion
+
+    #region JWT token configuration
+    private async Task<List<Claim>> CreateClaimAsync(UserDto user)
+    {
+        List<Claim> claims = new()
+    {
+        new(type: "Id", value: user.Id),
+        new(type: JwtRegisteredClaimNames.Sub, value: user.Email),
+        new(type: JwtRegisteredClaimNames.Email, value: user.Email),
+        new(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
+        new(type: JwtRegisteredClaimNames.Iat, value: DateTime.Now.ToUniversalTime().ToString())
+    };
+
+        var userRoles = await _userManager.GetRolesAsync(user);
+
+        claims.AddRange(userRoles.Select(x => new Claim(type: ClaimTypes.Role, value: x)));
+
+        return claims;
+    }
+    private string GenerateJwtToken(UserDto user)
+    {
+        var jwtTokenHandler = new JwtSecurityTokenHandler();
+        byte[] key = Encoding.UTF8.GetBytes(secretTokenKey);
+
+        var claims = CreateClaimAsync(user).Result;
+
+        // Token descriptor. (JWT payload)
+        var tokenDescriptor = new SecurityTokenDescriptor()
         {
-            List<Claim> claims = new()
-        {
-            new(type: "Id", value: user.Id),
-            new(type: JwtRegisteredClaimNames.Sub, value: user.Email),
-            new(type: JwtRegisteredClaimNames.Email, value: user.Email),
-            new(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
-            new(type: JwtRegisteredClaimNames.Iat, value: DateTime.Now.ToUniversalTime().ToString())
+            Subject = new ClaimsIdentity(claims),
+
+            Expires = DateTime.Now.AddHours(1),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256),
         };
 
-            var userRoles = await _userManager.GetRolesAsync(user);
+        var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+        var jwtToken = jwtTokenHandler.WriteToken(token);
 
-            claims.AddRange(userRoles.Select(x => new Claim(type: ClaimTypes.Role, value: x)));
-
-            return claims;
-        }
-        private string GenerateJwtToken(UserDto user)
-        {
-            var jwtTokenHandler = new JwtSecurityTokenHandler();
-            byte[] key = Encoding.UTF8.GetBytes(secretTokenKey);
-
-            var claims = CreateClaimAsync(user).Result;
-
-            // Token descriptor. (JWT payload)
-            var tokenDescriptor = new SecurityTokenDescriptor()
-            {
-                Subject = new ClaimsIdentity(claims),
-
-                Expires = DateTime.Now.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256),
-            };
-
-            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
-            var jwtToken = jwtTokenHandler.WriteToken(token);
-
-            return jwtToken;
-        }
-        #endregion
+        return jwtToken;
     }
+    #endregion
 }
