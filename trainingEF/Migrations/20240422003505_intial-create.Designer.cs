@@ -11,8 +11,8 @@ using trainingEF.Data;
 namespace trainingEF.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240414070302_Add identity data to api")]
-    partial class Addidentitydatatoapi
+    [Migration("20240422003505_intial-create")]
+    partial class intialcreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -80,6 +80,10 @@ namespace trainingEF.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
@@ -130,6 +134,8 @@ namespace trainingEF.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("IdentityUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -211,42 +217,14 @@ namespace trainingEF.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("trainingEF.Models.Customer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Address")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Customers");
-                });
-
             modelBuilder.Entity("trainingEF.Models.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("CustomerId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("OrderPlaced")
                         .HasColumnType("TEXT");
@@ -254,11 +232,14 @@ namespace trainingEF.Migrations
                     b.Property<DateTime>("Orderfulfilled")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("OrderDbSet");
                 });
 
             modelBuilder.Entity("trainingEF.Models.OrderDetail", b =>
@@ -282,7 +263,7 @@ namespace trainingEF.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderDetails");
+                    b.ToTable("OrderDetailDbSet");
                 });
 
             modelBuilder.Entity("trainingEF.Models.Product", b =>
@@ -300,22 +281,17 @@ namespace trainingEF.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("ProductDbSet");
                 });
 
-            modelBuilder.Entity("trainingEF.UserModel", b =>
+            modelBuilder.Entity("trainingEF.Models.DTOs.UserDto", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<string>("Address")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
-
-                    b.ToTable("UserDbSet");
+                    b.HasDiscriminator().HasValue("UserDto");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -371,11 +347,9 @@ namespace trainingEF.Migrations
 
             modelBuilder.Entity("trainingEF.Models.Order", b =>
                 {
-                    b.HasOne("trainingEF.Models.Customer", "Customer")
+                    b.HasOne("trainingEF.Models.DTOs.UserDto", "Customer")
                         .WithMany("Orders")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CustomerId");
 
                     b.Navigation("Customer");
                 });
@@ -399,14 +373,14 @@ namespace trainingEF.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("trainingEF.Models.Customer", b =>
-                {
-                    b.Navigation("Orders");
-                });
-
             modelBuilder.Entity("trainingEF.Models.Order", b =>
                 {
                     b.Navigation("OrderDetails");
+                });
+
+            modelBuilder.Entity("trainingEF.Models.DTOs.UserDto", b =>
+                {
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

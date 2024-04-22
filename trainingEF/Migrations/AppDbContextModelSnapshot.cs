@@ -289,9 +289,6 @@ namespace trainingEF.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("themmen")
-                        .HasColumnType("TEXT");
-
                     b.HasDiscriminator().HasValue("UserDto");
                 });
 
