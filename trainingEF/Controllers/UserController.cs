@@ -1,59 +1,51 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using trainingEF.Models.DTOs;
 using trainingEF.Repositories;
 namespace trainingEF.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 public class UserController : ControllerBase
 {
-    private readonly IUserRepository userRepository;
+    private readonly IIdentityRepository userDtoRepository;
 
-    public UserController(IUserRepository _userRepository)
+    public UserController(IIdentityRepository _userDtoRepository)
     {
-        userRepository = _userRepository;
+        userDtoRepository = _userDtoRepository;
     }
 
-    [HttpGet("All-users")]
+    [HttpGet("all-users")]
     public IActionResult Index()
     {
-        return Ok(userRepository.GetAllUsers().ToList());
+        return Ok(userDtoRepository.GetAllUsers());
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{email}")]
     [ActionName("GetUserById")]
-    //[Authorize(Roles = "Admin")]
-    public UserModel? GetUserById(int id)
+    public async Task<IActionResult>? GetUserByEmail(string email)
     {
-        return userRepository.GetUserById(id);
+        return Ok(await userDtoRepository.GetUserByEmail(email));
     }
-
-    [HttpPost]
-    public async Task<ActionResult<UserModel>> Create(UserModel user)
-    {
-        await userRepository.CreateUser(user);
-
-        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
-    }
-
+   
     [HttpPut("{id}")]
-    public async Task<ActionResult> Edit(int id, UserModel user)
+    public async Task<ActionResult> Update(string id, UserDto user)
     {
         if (id != user.Id)
         {
             return BadRequest();
         }
 
-        bool isUpdated = await userRepository.UpdateUser(user);
+        UserDto? updatedUser = await userDtoRepository.UpdateUser(user);
 
-        return isUpdated ? Ok() : BadRequest();
+        return updatedUser != null ? Ok(updatedUser) : BadRequest();
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> Delete(int id)
+    public async Task<ActionResult> Delete(string id)
     {
-        bool isDeleted = await userRepository.DeleteUser(id);
+        bool isDeleted = await userDtoRepository.DeleteUser(id);
 
         return isDeleted ? Ok() : BadRequest();
     }

@@ -1,13 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using trainingEF.Configuration;
-using trainingEF.Entities;
 using trainingEF.Models;
 using trainingEF.Models.DTOs;
 using trainingEF.Repositories;
@@ -18,14 +10,11 @@ namespace trainingEF.Controllers;
 [ApiController]
 public class AuthenticationController : ControllerBase
 {
-    private readonly IIdentityRepository _identityRepository;
+    private readonly IIdentityRepository identityRepository;
 
-    public AuthenticationController(
-        UserManager<IdentityUser> userManager,
-        IIdentityRepository identityRepository,
-        IConfiguration configuration)
+    public AuthenticationController(IIdentityRepository _identityRepository)
     {
-        _identityRepository = identityRepository;
+        identityRepository = _identityRepository;
     }
 
     [HttpPost]
@@ -36,7 +25,7 @@ public class AuthenticationController : ControllerBase
         // Validate the incoming request
         if (ModelState.IsValid)
         {
-            AuthResult result = await _identityRepository.Register(requestDto);
+            AuthResult result = await identityRepository.Register(requestDto);
 
             if (result.Result)
             {
@@ -69,7 +58,7 @@ public class AuthenticationController : ControllerBase
             if (ModelState.IsValid)
             {
                 // Check if the email already exist
-                AuthResult result = await _identityRepository.Login(userDto);
+                AuthResult result = await identityRepository.Login(userDto);
 
                 if (result.Result)
                 {
@@ -107,7 +96,7 @@ public class AuthenticationController : ControllerBase
         // Validate the incoming request
         if (ModelState.IsValid)
         {
-            var result = await _identityRepository.AddRoleAdmin(userId);
+            var result = await identityRepository.AddRoleAdmin(userId);
 
             if (result.Result)
             {

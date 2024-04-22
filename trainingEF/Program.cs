@@ -7,6 +7,7 @@ using trainingEF.Data;
 using trainingEF.Repositories;
 using FluentValidation.AspNetCore;
 using trainingEF.Extensions;
+using trainingEF.Models.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,8 +48,12 @@ try
 
     // Add the roles
     RoleManager<IdentityRole> roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    UserManager<IdentityUser> userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
-    await AppDbSeeding.SeedingData(roleManager: roleManager, userManager: userManager, appDb: appDb);
+    UserManager<UserDto> userManager = serviceProvider.GetRequiredService<UserManager<UserDto>>();
+    await AppDbSeeding.SeedingData(
+        roleManager: roleManager,
+        userManager: userManager,
+        appDb: appDb,
+        configuration: builder.Configuration);
 } catch(Exception e)
 {
     Console.Write($"Exception {e}");

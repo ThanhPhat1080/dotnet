@@ -11,16 +11,17 @@ namespace trainingEF.Repositories
 {
     public class IdentityRepository : IIdentityRepository
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<UserDto> _userManager;
         private readonly string secretTokenKey;
 
         public IdentityRepository(
-            UserManager<IdentityUser> userManager,
+            UserManager<UserDto> userManager,
             IConfiguration configuration) {
             _userManager = userManager;
             secretTokenKey = configuration.GetSection("JwtConfig:Secret").Value;
         }
 
+        #region Authention
         public async Task<AuthResult> Register(UserRegistrationRequestDto userDto)
         {
             // Check if the email already exist
@@ -38,7 +39,7 @@ namespace trainingEF.Repositories
                 };
             }
 
-            var newUser = new IdentityUser()
+            var newUser = new UserDto()
             {
                 Email = userDto.Email,
                 UserName = userDto.Name
@@ -187,7 +188,54 @@ namespace trainingEF.Repositories
                 };
             }
         }
-        private async Task<List<Claim>> CreateClaimAsync(IdentityUser user)
+        #endregion
+
+        #region User actions
+        public IEnumerable<UserDto> GetAllUsers()
+        {
+            IEnumerable<UserDto> users = _userManager.Users.ToList();
+
+            return users;
+        }
+
+        public async Task<UserDto?> GetUserByEmail(string email)
+        {
+            UserDto user = await _userManager.FindByEmailAsync(email);
+
+            return user;
+        }
+
+        public async Task<UserDto?> UpdateUser(UserDto updatedUser)
+        {
+            UserDto foundUser = await _userManager.FindByIdAsync(updatedUser.Id);
+            if (foundUser != null)
+            {
+
+                foundUser.Address = updatedUser.Address;
+                IdentityResult result = await _userManager.UpdateAsync(foundUser);
+
+                return result.Succeeded ? updatedUser : null;
+            }
+
+            return null;
+        }
+
+        public async Task<bool> DeleteUser(string id)
+        {
+            UserDto? foundUser = await _userManager.FindByIdAsync(id);
+            if (foundUser == null)
+            {
+                return false;
+            }
+
+            IdentityResult result = await _userManager.DeleteAsync(foundUser);
+
+            return result.Succeeded;
+        }
+        #endregion
+
+        #region JWT token configuration
+        private async Task<List<Claim>> CreateClaimAsync(UserDto user)
         {
             List<Claim> claims = new()
         {
@@ -204,8 +252,7 @@ namespace trainingEF.Repositories
 
             return claims;
         }
-
-        private string GenerateJwtToken(IdentityUser user)
+        private string GenerateJwtToken(UserDto user)
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
             byte[] key = Encoding.UTF8.GetBytes(secretTokenKey);
@@ -226,5 +273,6 @@ namespace trainingEF.Repositories
 
             return jwtToken;
         }
+        #endregion
     }
 }

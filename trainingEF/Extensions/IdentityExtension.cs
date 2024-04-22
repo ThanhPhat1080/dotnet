@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using trainingEF.Data;
+using trainingEF.Models.DTOs;
 
 namespace trainingEF.Extensions;
 
@@ -34,8 +35,8 @@ public static class IdentityExtension
         });
 
         service
-            .AddIdentityCore<IdentityUser>()
-            .AddUserManager<UserManager<IdentityUser>>()
+            .AddIdentityCore<UserDto>()
+            .AddUserManager<UserManager<UserDto>>()
             .AddRoles<IdentityRole>()
             .AddRoleManager<RoleManager<IdentityRole>>()
             .AddEntityFrameworkStores<AppDbContext>();

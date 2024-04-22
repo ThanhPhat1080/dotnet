@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using trainingEF.Entities;
-using trainingEF.Models;
+using trainingEF.Models.DTOs;
 
 namespace trainingEF.Data;
 
@@ -8,8 +8,9 @@ public class AppDbSeeding
 {
     public static async Task SeedingData(
         RoleManager<IdentityRole> roleManager,
-        UserManager<IdentityUser> userManager,
-        AppDbContext appDb)
+        UserManager<UserDto> userManager,
+        AppDbContext appDb,
+        IConfiguration configuration)
     {
 
         await using var transaction = await appDb.Database.BeginTransactionAsync();
@@ -32,21 +33,21 @@ public class AppDbSeeding
 
             if (userExist == null)
             {
-                var newUser = new IdentityUser()
+                var newUser = new UserDto()
                 {
-                    Email = "admin@admin.com",
+                    Email = configuration.GetSection("SeedingData:DefaultAdminEmail").Value,
                     UserName = "AdminDefault"
                 };
 
                 // TODO: add pass to appSetting key
-                await userManager.CreateAsync(newUser, "Admin@123");
+                await userManager.CreateAsync(newUser, configuration.GetSection("SeedingData:DefaultAdminPassword").Value);
                 await userManager.AddToRoleAsync(newUser, Roles.Admin.ToString());
 
                 await transaction.CommitAsync();
             }
             #endregion
 
-        } catch (Exception ex)
+        } catch (Exception)
         {
             await transaction.RollbackAsync();
             throw new Exception("Cannot add default data");
