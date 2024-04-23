@@ -13,7 +13,8 @@ public interface IIdentityRepository
 
     #region User
     public IEnumerable<UserDto> GetAllUsers();
-    public Task<UserDto?> GetUserByEmail(string id);
+    public Task<UserDto?> GetUserByEmail(string email);
+    public Task<UserDto?> GetUserById(string id);
     public Task<UserDto?> UpdateUser(UserDto user);
     public Task<bool> DeleteUser(string id);
     #endregion

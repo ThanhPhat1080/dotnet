@@ -205,6 +205,13 @@ public class IdentityRepository : IIdentityRepository
         return user;
     }
 
+    public async Task<UserDto?> GetUserById(string id)
+    {
+        UserDto user = await _userManager.FindByIdAsync(id);
+
+        return user;
+    }
+
     public async Task<UserDto?> UpdateUser(UserDto updatedUser)
     {
         UserDto foundUser = await _userManager.FindByIdAsync(updatedUser.Id);
