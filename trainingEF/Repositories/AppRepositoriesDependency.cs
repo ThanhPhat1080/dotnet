@@ -6,6 +6,7 @@ public static class AppRepositoriesDependency
     {
         service.AddScoped<IIdentityRepository, IdentityRepository>();
         service.AddScoped<IOrderRepository, OrderRepository>();
+        service.AddScoped<IProductRepository, ProductRepository>();
 
         return service;
     }

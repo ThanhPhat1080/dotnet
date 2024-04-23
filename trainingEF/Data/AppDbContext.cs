@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata;
 using trainingEF.Models;
 using trainingEF.Models.DTOs;
 
@@ -12,10 +11,10 @@ public class AppDbContext : IdentityDbContext
     {
     }
 
-    public DbSet<UserDto>? UserDtoDbSet { get; set; }
-    public DbSet<Order>? OrderDbSet { get; set; }
-    public DbSet<Product>? ProductDbSet { get; set; }
-    public DbSet<OrderDetail>? OrderDetailDbSet { get; set; }
+    public DbSet<UserDto> UserDtoDbSet => Set<UserDto>();
+    public DbSet<Order> OrderDbSet => Set<Order>();
+    public DbSet<Product> ProductDbSet => Set<Product>();
+    public DbSet<OrderDetail> OrderDetailDbSet => Set<OrderDetail>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -24,12 +23,13 @@ public class AppDbContext : IdentityDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        //modelBuilder.Entity<Order>()
-        //    .HasOne(e => e.User)
-        //    .WithMany()
-        //    .HasForeignKey(e => e.UserId)
-        //    .IsRequired();
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Order>()
+            .HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId)
+            .IsRequired();
 
         //modelBuilder.Entity<Order>()
         //    .HasMany(e => e.OrderDetails)

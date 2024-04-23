@@ -6,7 +6,8 @@ namespace trainingEF.Models;
 public class Product
 {
     [Key] // Set primary key
-    public int Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public string Id { get; set; } = null!;
 
     [Required]
     public string Name { get; set; } = "";

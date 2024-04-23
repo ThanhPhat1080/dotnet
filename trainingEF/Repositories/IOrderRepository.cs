@@ -5,6 +5,9 @@ namespace trainingEF.Repositories;
 
 public interface IOrderRepository
 {
-    public Task<IEnumerable<Order>> GetAllOrders();
-    public Task<Order> CreateOrder(OrderRequestDto requestOrder, UserDto currentUser);
+    Task<IEnumerable<Order>> GetAllOrders();
+    Task<Order> CreateOrder(OrderRequestDto requestOrder, UserDto currentUser);
+    Task<Order?> GetOrderById(string id);
+
+    Task<OrderDetail?> CreateOrderDetail(OrderDetail orderDetail);
 }

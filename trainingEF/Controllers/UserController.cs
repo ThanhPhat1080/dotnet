@@ -23,7 +23,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("{email}")]
-    [ActionName("GetUserById")]
+    [ActionName("GetUserByEmail")]
     public async Task<IActionResult>? GetUserByEmail(string email)
     {
         return Ok(await userDtoRepository.GetUserByEmail(email));
