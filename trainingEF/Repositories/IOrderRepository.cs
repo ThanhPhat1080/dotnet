@@ -9,5 +9,6 @@ public interface IOrderRepository
     Task<Order> CreateOrder(OrderRequestDto requestOrder, UserDto currentUser);
     Task<Order?> GetOrderById(string id);
 
-    Task<OrderDetail?> CreateOrderDetail(OrderDetail orderDetail);
+    Task<OrderDetail?> CreateOrderDetail(OrderDetailRequestDto orderDetail);
+    Task<IEnumerable<OrderDetail>> GetAllOrderDetail();
 }

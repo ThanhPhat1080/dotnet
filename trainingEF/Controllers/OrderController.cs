@@ -21,6 +21,7 @@ public class OrderController : ControllerBase
         identityRepository = _identityRepository;
     }
 
+    #region order
     [HttpGet]
     public async Task<IActionResult> Index()
     {
@@ -54,10 +55,19 @@ public class OrderController : ControllerBase
 
         return Ok(result);
     }
+    #endregion
+
+    #region order-detail
+    [HttpGet("detail")]
+    [ActionName("GetAllOrderDetail")]
+    public async Task<IActionResult> GetAllOrderDetail()
+    {
+        return Ok(await orderRepository.GetAllOrderDetail());
+    }
 
     [HttpPost("detail")]
     [ActionName("CreateOrderDetail")]
-    public async Task<IActionResult> CreateOrderDetail([FromBody] OrderDetail orderDetailRequest)
+    public async Task<IActionResult> CreateOrderDetail([FromBody] OrderDetailRequestDto orderDetailRequest)
     {
         var result = await orderRepository.CreateOrderDetail(orderDetailRequest);
 
@@ -68,4 +78,6 @@ public class OrderController : ControllerBase
 
         return Ok(result);
     }
+    #endregion
+
 }

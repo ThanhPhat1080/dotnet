@@ -31,10 +31,10 @@ public class AppDbContext : IdentityDbContext
             .HasForeignKey(e => e.UserId)
             .IsRequired();
 
-        //modelBuilder.Entity<Order>()
-        //    .HasMany(e => e.OrderDetails)
-        //    .WithOne()
-        //    .HasForeignKey(e => e.OrderId)
-        //    .IsRequired();
+        modelBuilder.Entity<Order>()
+            .HasMany(e => e.OrderDetails)
+            .WithOne()
+            .HasForeignKey(e => e.OrderId)
+            .IsRequired();
     }
 }

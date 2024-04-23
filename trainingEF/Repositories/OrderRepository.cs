@@ -24,7 +24,9 @@ public class OrderRepository : IOrderRepository
     public async Task<IEnumerable<Order>> GetAllOrders()
     {
         List<Order> orders = await orderDbSet
-            .Include(x => x.User)
+            .Include("User")
+            .Include("OrderDetails")
+            .Include("OrderDetails.Product")
             .ToListAsync();
 
         return orders;
@@ -64,7 +66,7 @@ public class OrderRepository : IOrderRepository
 
     #region order-detail
 
-    public async Task<OrderDetail?> CreateOrderDetail(OrderDetail requestOrder)
+    public async Task<OrderDetail?> CreateOrderDetail(OrderDetailRequestDto requestOrder)
     {
         OrderDetail? newOrderDetail = new()
         {
@@ -81,6 +83,11 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(x => x.Id.Equals(newOrderDetail.Id));
 
         return newOrderDetail;
+    }
+
+    public async Task<IEnumerable<OrderDetail>> GetAllOrderDetail()
+    {
+        return await orderDetailDbSet.ToListAsync();
     }
 
     #endregion

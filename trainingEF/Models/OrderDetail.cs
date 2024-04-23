@@ -9,8 +9,8 @@ public class OrderDetail
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string Id { get; set; } = null!;
     public int Quantity { get; set; }
-    public string ProductId { get; set; }
-    public string OrderId { get; set; }
+    public string ProductId { get; set; } = null!;
+    public string OrderId { get; set; } = null!;
 
     public Product Product { get; set; } = null!;
 }
