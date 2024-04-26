@@ -34,4 +34,13 @@ public class ProductRepository : IProductRepository
     {
         return await productDbSet.ToListAsync();
     }
+
+    public async Task<Product?> GetProductDetailById(string id)
+    {
+        Product? result = await productDbSet
+            .Include(x => x.OrderDetails)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        return result;
+    }
 }

@@ -363,7 +363,7 @@ namespace trainingEF.Migrations
                         .IsRequired();
 
                     b.HasOne("trainingEF.Models.Product", "Product")
-                        .WithMany()
+                        .WithMany("OrderDetails")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -372,6 +372,11 @@ namespace trainingEF.Migrations
                 });
 
             modelBuilder.Entity("trainingEF.Models.Order", b =>
+                {
+                    b.Navigation("OrderDetails");
+                });
+
+            modelBuilder.Entity("trainingEF.Models.Product", b =>
                 {
                     b.Navigation("OrderDetails");
                 });
