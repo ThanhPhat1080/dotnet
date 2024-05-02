@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using trainingEF.Models;
+using trainingEF.Models.DTOs;
 using trainingEF.Repositories;
+using trainingEF.Services;
 
 namespace trainingEF.Controllers;
 
@@ -10,10 +12,12 @@ namespace trainingEF.Controllers;
 public class ProductController : ControllerBase
 {
     private readonly IProductRepository productRepository;
+    private readonly IProductService productService;
 
-    public ProductController(IProductRepository _productRepository)
+    public ProductController(IProductRepository _productRepository, IProductService _productService)
     {
         productRepository = _productRepository;
+        productService = _productService;
     }
 
     [HttpGet]
@@ -37,8 +41,8 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateProduct([FromBody]Product product)
+    public async Task<IActionResult> CreateProduct([FromBody]ProductDto product)
     {
-        return Ok(await productRepository.CreateProduct(product));
+        return Ok(await productService.CreateProduct(product));
     }
 }
